@@ -8,41 +8,8 @@ This is currently a work-in-progress. The executables work, but transfer speeds 
 
 ### UNIX
 
-You can build for Unix/Linux by just using make. However, this version is not tested.
+You can build for Unix/Linux by just using make.
 
-### CP/M
-
-You'll need to have [Z88DK](https://z88dk.org/site) available. Ensure that `zcc` is in your path. Then to build, do:
-
-    $ make -f makefile.cpm
-
-or
-
-    $ make -f makefile.cpm.8085
-
-for the 8085 version.  The binaries, ZMRX.COM and ZMTX.COM, will work on CP/M 2.2 and CP/M 3. 
-
-### Atari ST (TOS/EmuTOS)
-
-You'll need to have [m68k-atari-mint cross-tools](http://vincent.riviere.free.fr/soft/m68k-atari-mint) installed and available on your PATH. You'll also need [CMake](https://cmake.org) installed. Adjust `toolchain_file.txt` for the paths to your compiler install.
-
-After cloning this repository, you need to clone and build the libcmini submodule:
-
-    $ git submodule init
-    $ git submodule update
-    $ (cd libcmini; make)
-
-Then, make a build directory and run CMake:
-
-    $ mkdir build
-    $ cd build
-    $ cmake -DCMAKE_TOOLCHAIN_FILE=../toolchain_file.txt ..
-
-And finally from the build directoy, do the make:
-
-    $ make
-
-This will create the `zmrx.ttp` and `zmtx.ttp` executables in the build directory.    
 ## USAGE
 
 ### Receiving via ZMRX.COM

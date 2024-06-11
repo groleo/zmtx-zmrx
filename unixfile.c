@@ -41,14 +41,13 @@ char *strip_path(char *path_in)
     return path_in;
 }
 
-int validate_device_choice(char choice)
+int validate_device_choice(const char *choice)
 {
     // All choices are valid at this point.
     return 1;
 }
 
-int get_matching_files(char *result, int argc, char **argv)
+int get_matching_files(uint8_t *result, uint16_t result_size, int argc, char **argv)
 {
     return 0;
 }
-

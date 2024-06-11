@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
-
+#include <time.h>
 #define FILENAME_BUFFER_SIZE 8192
 
 time_t fileio_get_modification_time(const char *filename);

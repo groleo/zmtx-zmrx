@@ -14,9 +14,7 @@
 /******************************************************************************/
 
 #include "version.h"
-#if __atarist__
 #include <getopt.h>
-#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -27,20 +25,12 @@
 #include "zmdm.h"
 #include "zmodem.h"
 
-#ifdef __Z88DK
-#pragma printf = "%c %s %d %8ld"        // enables %c, %s, %d, %ld only
-#endif
-
 FILE *fp = NULL;     /* fp of file being received or NULL */
 time_t mdate;          /* file date of file being received */
 char filename[0x80]; /* filename of file being received */
 char *name; /* pointer to the part of the filename used in the actual open */
 
-#ifdef __CPM__
-extern int use_aux;
-#else
 extern int AUX_DEV_CMD_LINE;
-#endif
 
 int opt_v = FALSE; /* show progress output */
 int opt_d = FALSE; /* show debug output */
@@ -215,7 +205,7 @@ void receive_file()
 
     sscanf((char *)(rx_data_subpacket +
                           strlen((char *)rx_data_subpacket) + 1),
-           "%ld %o", &size, &mdate);
+           "%ld %lo", &size, &mdate);
 
     current_file_size = size;
 
@@ -341,12 +331,7 @@ void usage(void)
     printf("    CP/M port by Rob Gowin with help from Andrew Lynch.\r\n");
     printf("    TOS port by Rob Gowin.\r\n");
     printf("usage: zmrx [options]\r\n");
-#ifdef __CPM__
-    printf("    -x n        n=0: use console for transfers (default)\n");
-    printf("                n=1: use aux device for transfers\n");
-#else
     printf("    -x N        Use device N as AUX device\r\n");
-#endif
     printf("    -j          junk pathnames\r\n");
     printf("    -n          transfer if source is newer\r\n");
     printf("    -o          overwrite if exists\r\n");
@@ -370,16 +355,7 @@ int main(int argc, char **argv)
     int ch;
     int have_error = FALSE;
 
-#if  __atarist__
-    argv[0] = "zmrx";
-#endif
-
-#ifdef __CPM__
-    use_aux = FALSE;
-    const char *optstring = "DJX:NOPVQ";
-#else
     const char *optstring = "djx:nopvq";
-#endif
 
     while ((ch = getopt(argc, argv, optstring)) != -1) {
         switch (ch) {
@@ -394,13 +370,8 @@ int main(int argc, char **argv)
             case 'X':
             case 'x':
                 if (validate_device_choice(optarg)) {
-#ifdef __CPM__
-                    if (optarg[0] == '0') use_aux = FALSE;
-                    else if (optarg[0] == '1') use_aux = TRUE;
-#else
                     AUX_DEV_CMD_LINE = (int)strtol(optarg, NULL, 10);
                     printf("Using AUX device %d.\n", AUX_DEV_CMD_LINE);
-#endif
                 } else have_error = TRUE;
                 break;
             case 'N':

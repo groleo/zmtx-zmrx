@@ -10,6 +10,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <signal.h>
 #include <sys/time.h>
 #include <termios.h>
 #include <unistd.h>
@@ -18,6 +19,7 @@
 #include "zmodem.h"
 
 extern int last_sent;
+int AUX_DEV_CMD_LINE=-1;
 
 /*
  * routines to make the io channel raw and restore it
@@ -63,7 +65,8 @@ void rx_purge(void) {
     FD_SET(0, &f);
 
     while (select(1, &f, NULL, NULL, &t)) {
-        read(0, &c, 1);
+        int rv = read(0, &c, 1);
+        if (rv < 0) break;
     }
 }
 
@@ -198,4 +201,9 @@ int rx_raw(int timeout) {
     }
 
     return c;
+}
+
+int check_user_abort(void)
+{
+    return 0;
 }

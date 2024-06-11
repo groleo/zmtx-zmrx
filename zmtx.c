@@ -14,12 +14,11 @@
 /******************************************************************************/
 
 #include "version.h"
-#if __atarist__
 #include <getopt.h>
-#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -29,15 +28,7 @@
 
 #define MAX_SUBPACKETSIZE 1024
 
-#ifdef __Z88DK
-#pragma printf = "%c %s %d %8ld"        // enables %c, %s, %d, %ld only
-#endif
-
-#ifdef __CPM__
-extern int use_aux;
-#else
 extern int AUX_DEV_CMD_LINE;
-#endif
 
 int opt_v = FALSE;                      /* show progress output */
 int opt_d = FALSE;                      /* show debug output */
@@ -441,12 +432,7 @@ void usage(void)
     printf("    TOS  port by Rob Gowin.\r\n");
 
     printf("usage: zmtx [options] files...\r\n");
-#ifdef __CPM__
-    printf("    -x n        n=0: use console for transfers (default)\r\n");
-    printf("                n=1: use aux device for transfers\r\n");
-#else
     printf("    -x N        Use device N as AUX device\r\n");
-#endif
     printf("    -n          transfer if source is newer\r\n");
     printf("    -o          overwrite if exists\r\n");
     printf("    -p          protect (don't overwrite if exists)\r\n");
@@ -468,15 +454,7 @@ int main(int argc, char **argv)
     int i;
     int have_error = FALSE;
     int ch;
-#ifdef __CPM__
-    use_aux = FALSE;
-    const char *optstring = "DX:NOPV";
-#else
     const char *optstring = "dx:nopv";
-#endif
-#if  __atarist__
-    argv[0] = "zmtx";
-#endif
     while ((ch = getopt(argc, argv, optstring)) != -1) {
         switch (ch) {
             case 'D':
@@ -486,13 +464,8 @@ int main(int argc, char **argv)
             case 'X':
             case 'x':
                 if (validate_device_choice(optarg)) {
-#ifdef __CPM__
-                    if (optarg[0] == '0') use_aux = FALSE;
-                    else if (optarg[0] == '1') use_aux = TRUE;
-#else
                     AUX_DEV_CMD_LINE = (int)strtol(optarg, NULL, 10);
                     printf("Using AUX device %d.\n", AUX_DEV_CMD_LINE);
-#endif
                 } else have_error = TRUE;
                 break;
             case 'N':
