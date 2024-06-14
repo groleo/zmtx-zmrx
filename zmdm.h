@@ -31,6 +31,11 @@
             * escaped                                                          \
             */
 
+#define ZM_MODE_RAW_FLOW 3U
+#define ZM_MODE_XONXOFF  2U
+#define ZM_MODE_RAW      1U
+#define ZM_MODE_RESTORE  0U
+
 #define HDRLEN 5 /* size of a zmodme header */
 
 EXTERN int in_fp;                          /* input file descriptor */
@@ -67,9 +72,11 @@ int check_user_abort(void);
 
 void cleanup(void);
 
-void fd_init(void); /* make the io channel raw */
+/* make the io channel raw */
+int fd_init(int fd, int mode);
 
-void fd_exit(void); /* reset io channel to state before zmtx was called */
+/* reset io channel to state before zmtx was called */
+void fd_exit(int fd);
 
 int rx_data(unsigned char *p, int *l);
 

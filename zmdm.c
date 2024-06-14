@@ -123,7 +123,7 @@ void tx_hex_header(unsigned char *p)
 
 {
     int i;
-    unsigned short int crc;
+    uint16_t crc;
 
 #ifdef DEBUG
     fprintf(stderr, "tx_hheader : ");
@@ -194,7 +194,7 @@ void tx_bin32_header(unsigned char *p)
 
 {
     int i;
-    unsigned long crc;
+    uint32_t crc;
 
 #ifdef DEBUG
     fprintf(stderr, "tx binary header 32 bits crc\n");
@@ -290,7 +290,7 @@ void tx_header(unsigned char *p)
 void tx_32_data(int sub_frame_type, unsigned char *p, int l)
 
 {
-    unsigned long crc;
+    uint32_t crc;
 
 #ifdef DEBUG
     fprintf(stderr, "tx_32_data\n");
@@ -519,8 +519,8 @@ int rx_32_data(unsigned char *p, int *l)
 
 {
     int c;
-    unsigned long rxd_crc;
-    unsigned long crc;
+    uint32_t rxd_crc;
+    uint32_t crc;
     int sub_frame_type;
 
 #ifdef DEBUG
@@ -549,10 +549,10 @@ int rx_32_data(unsigned char *p, int *l)
 
     crc = ~crc;
 
-    rxd_crc = (long)rx(SMALL_TIMEOUT);
-    rxd_crc |= (long)rx(SMALL_TIMEOUT) << 8;
-    rxd_crc |= (long)rx(SMALL_TIMEOUT) << 16;
-    rxd_crc |= (long)rx(SMALL_TIMEOUT) << 24;
+    rxd_crc = rx(SMALL_TIMEOUT);
+    rxd_crc |= rx(SMALL_TIMEOUT) << 8;
+    rxd_crc |= rx(SMALL_TIMEOUT) << 16;
+    rxd_crc |= rx(SMALL_TIMEOUT) << 24;
 
     if (rxd_crc != crc) {
         return FALSE;
@@ -740,8 +740,8 @@ void rx_bin16_header(int timeout)
 {
     int c;
     int n;
-    unsigned short int crc;
-    unsigned short int rxd_crc;
+    uint16_t crc;
+    uint16_t rxd_crc;
 
 #ifdef DEBUG
     fprintf(stderr, "rx binary header 16 bits crc\n");
@@ -769,7 +769,7 @@ void rx_bin16_header(int timeout)
 
     if (rxd_crc != crc) {
 #ifdef DEBUG
-        fprintf(stderr, "bad crc %4.4x %4.4x\n", rxd_crc, crc);
+        fprintf(stderr, "bad crc16: %4.4x != %4.4x\n", rxd_crc, crc);
 #endif
         return;
     }
@@ -782,8 +782,8 @@ void rx_hex_header(int timeout)
 {
     int c;
     int i;
-    unsigned short int crc = 0;
-    unsigned short int rxd_crc;
+    uint16_t crc = 0;
+    uint16_t rxd_crc;
 
 #ifdef DEBUG
     fprintf(stderr, "rx_hex_header : ");
@@ -848,10 +848,11 @@ void rx_bin32_header(int to)
 {
     int c;
     int n;
-    unsigned long crc;
-    unsigned long rxd_crc;
+    uint32_t crc;
+    uint32_t rxd_crc;
 
-    if (opt_d) fprintf(stderr, "rx binary header 32 bits crc\r\n");
+    if (opt_d)
+        fprintf(stderr, "rx binary header 32 bits crc\r\n");
 
     crc = 0xffffffffL;
 
@@ -872,6 +873,8 @@ void rx_bin32_header(int to)
     rxd_crc |= ((long)rx(SMALL_TIMEOUT)) << 24;
 
     if (rxd_crc != crc) {
+        if (opt_d)
+            fprintf(stderr, "bad crc32: %x != %x\r\n", rxd_crc, crc);
         return;
     }
 
@@ -891,6 +894,9 @@ int rx_header_raw(int timeout, int errors)
 {
     int c;
 
+#ifdef DEBUG
+    fprintf(stderr,"rx header : ");
+#endif
     rxd_header_len = 0;
 
     do {
@@ -934,6 +940,9 @@ int rx_header_raw(int timeout, int errors)
             return c;
         }
 
+#ifdef DEBUG
+        fprintf(stderr,"\n");
+#endif
         switch (c) {
         case ZBIN:
             rx_bin16_header(timeout);
@@ -960,9 +969,11 @@ int rx_header_raw(int timeout, int errors)
             continue;
         }
         if (errors && rxd_header_len == 0) {
+#ifdef DEBUG
+            fprintf(stderr, "invalid header %c\n", c);
+#endif
             return INVHDR;
         }
-
     } while (rxd_header_len == 0);
 
     /*
@@ -983,7 +994,6 @@ int rx_header_raw(int timeout, int errors)
 }
 
 int rx_header(int timeout)
-
 {
     return rx_header_raw(timeout, FALSE);
 }

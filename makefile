@@ -1,20 +1,18 @@
 
-DEPDIR := .deps
-DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
-
 LIBSRC = zmdm.c crctab.c
 LIBOBJ = zmdm.o crctab.o
 SRC = unixterm.c unixfile.c zmrx.c zmtx.c
 OBJ = unixterm.o unixfile.o
 
 
-CFLAGS := -Wall -Werror -std=c99 -D_DEFAULT_SOURCE -O2
+CFLAGS := -DDEBUG -Wall -Werror -std=c99 -D_DEFAULT_SOURCE -O0 -g
 
-COMPILE.c = $(CC) $(DEPFLAGS) $(CFLAGS) -c
+COMPILE.c = $(CC) $(CFLAGS) -c
 
 ALL = libzmdm.a zmtx zmrx
 
-all: $(DEPDIR) $(ALL)
+all: $(ALL)
+
 
 libzmdm.a: $(LIBOBJ)
 	ar -crs $@ $?

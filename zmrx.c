@@ -310,7 +310,6 @@ void receive_file()
 }
 
 void cleanup(void)
-
 {
     if (fp) {
         fflush(fp);
@@ -321,15 +320,13 @@ void cleanup(void)
         fileio_set_modification_time(name, mdate);
     }
 
-    fd_exit();
+    fd_exit(0);
 }
 
 void usage(void)
 
 {
     printf("zmrx %s %s (C) Mattheij Computer Service 1994\r\n", VERSION, VERSION_DATE);
-    printf("    CP/M port by Rob Gowin with help from Andrew Lynch.\r\n");
-    printf("    TOS port by Rob Gowin.\r\n");
     printf("usage: zmrx [options]\r\n");
     printf("    -x N        Use device N as AUX device\r\n");
     printf("    -j          junk pathnames\r\n");
@@ -341,8 +338,6 @@ void usage(void)
     printf("    -v          verbose output\r\n");
     printf("    -q          quiet\r\n");
     printf("    (only one of -n -o or -p may be specified)\r\n");
-
-    cleanup();
 
     exit(1);
 }
@@ -431,7 +426,7 @@ int main(int argc, char **argv)
      * set the io device to transparent
      */
 
-    fd_init();
+    fd_init(0, ZM_MODE_RAW);
 
     /*
      * establish contact with the sender

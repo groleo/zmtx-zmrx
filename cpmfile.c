@@ -207,9 +207,11 @@ uint8_t* get_matching_files_for_pattern(uint8_t *result, uint16_t *result_size, 
  * @param result_size The size of the matched filenames buffer in bytes.
  * @param argc Number of items in argv pattern list.
  * @param argv List of patterns or full files names to search.
- * @return Result buffer filled with found filenames. For each file name entry, the first byte
- *         is the length of the filename, follow by that many bytes (not zero terminated). The
- *         value 0xFF for the length marks the end of the list.
+ * @return Result buffer filled with found filenames.
+ *          For each file name entry, the first byte
+ *          is the length of the filename,
+ *          follow by that many bytes (not zero terminated). The
+ *          value 0xFF for the length marks the end of the list.
  *
  *         The total number of matches is returned.
  *
@@ -225,5 +227,4 @@ int get_matching_files(uint8_t *result, uint16_t result_size, int argc, char **a
     }
     *result = 0xff;
     return total_matches;
-
 }

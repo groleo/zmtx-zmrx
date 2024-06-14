@@ -32,6 +32,7 @@ extern int AUX_DEV_CMD_LINE;
 
 int opt_v = FALSE;                      /* show progress output */
 int opt_d = FALSE;                      /* show debug output */
+int opt_q = FALSE;
 int subpacket_size = MAX_SUBPACKETSIZE; /* data subpacket size. may be modified
                                            during a session */
 int n_files_remaining;
@@ -82,7 +83,7 @@ void show_progress(char *name, FILE *fp)
 int send_from(char *name, FILE *fp)
 
 {
-    unsigned long n;
+    uint32_t n;
     int type = ZCRCG;
     unsigned char zdata_frame[] = {ZDATA, 0, 0, 0, 0};
 
@@ -419,17 +420,16 @@ int send_file(char *name)
 }
 
 void cleanup(void)
-
 {
-    fd_exit();
+    fd_exit(0);
 }
 
 void usage(void)
 
 {
+    cleanup();
+
     printf("\rzmtx %s %s (C) Mattheij Computer Service 1994\r\n", VERSION, VERSION_DATE);
-    printf("    CP/M port by Rob Gowin with help from Andrew Lynch.\r\n");
-    printf("    TOS  port by Rob Gowin.\r\n");
 
     printf("usage: zmtx [options] files...\r\n");
     printf("    -x N        Use device N as AUX device\r\n");
@@ -439,9 +439,9 @@ void usage(void)
     printf("\r\n");
     printf("    -d          debug output\r\n");
     printf("    -v          verbose output\r\n");
+    printf("    -q          quiet\r\n");
     printf("    (only one of -n -o or -p may be specified)\r\n");
 
-    cleanup();
 
     exit(1);
 }
@@ -454,7 +454,7 @@ int main(int argc, char **argv)
     int i;
     int have_error = FALSE;
     int ch;
-    const char *optstring = "dx:nopv";
+    const char *optstring = "dx:nopvq";
     while ((ch = getopt(argc, argv, optstring)) != -1) {
         switch (ch) {
             case 'D':
@@ -480,6 +480,10 @@ int main(int argc, char **argv)
             case 'p':
                 management_protect = TRUE;
                 break;
+            case 'Q':
+            case 'q':
+                opt_q = TRUE;
+                break;
             case 'V':
             case 'v':
                 opt_v = TRUE;
@@ -501,6 +505,11 @@ int main(int argc, char **argv)
         opt_v = TRUE;
     }
 
+    if (opt_q) {
+        opt_v = FALSE;
+        opt_d = FALSE;
+    }
+
     if ((management_newer + management_clobber + management_protect) > 1 || argc == 0) {
         usage();
     }
@@ -509,7 +518,7 @@ int main(int argc, char **argv)
      * set the io device to transparent
      */
 
-    fd_init();
+    fd_init(0, ZM_MODE_RAW);
 
     /*
      * clear the input queue from any possible garbage
@@ -528,7 +537,12 @@ int main(int argc, char **argv)
     bzero(filenames, FILENAME_BUFFER_SIZE);
     n_files_remaining = get_matching_files(filenames, FILENAME_BUFFER_SIZE, argc, argv);
 
-    if (n_files_remaining < 0) exit(1);
+    if (n_files_remaining <= 0)
+    {
+        cleanup();
+        fprintf(stderr, "No files to send\n");
+        exit(1);
+    }
 
     if (opt_v) {
         fprintf(stderr, "Found %d %s to send.\r\n", n_files_remaining, n_files_remaining == 1 ? "file" : "files");
@@ -552,8 +566,8 @@ int main(int argc, char **argv)
         unsigned char zrqinit_header[] = {ZRQINIT, 0, 0, 0, 0};
         i++;
         if (i > 10) {
-            fprintf(stderr, "zmtx: can't establish contact with receiver\r\n");
             cleanup();
+            fprintf(stderr, "zmtx: can't establish contact with receiver\r\n");
             exit(3);
         }
 

@@ -26,27 +26,92 @@ int AUX_DEV_CMD_LINE=-1;
  * to its normal state.
  */
 
-struct termios old_termios;
+struct termios tty,oldtty;
 
-void fd_init(void) {
-    struct termios t;
+/*
+ * mode(n)
+ *  ZM_MODE_RAW_FLOW: save old tty stat AND set raw mode with flow control
+ *  ZM_MODE_XONXOFF: set XON/XOFF for sb/sz with ZMODEM
+ *  ZM_MODE_RAW: save old tty stat AND set raw mode
+ *  ZM_MODE_RESTORE: restore original tty mode
+ * Returns the output baudrate, or zero on failure
+ */
+int fd_init(int fd, int mode)
+{
+    static int did0 = FALSE;
+    fprintf(stderr, "mode:%d\n", mode);
 
-    tcgetattr(0, &old_termios);
+    switch(mode) {
 
-    tcgetattr(0, &t);
+        case ZM_MODE_XONXOFF:		/* Un-raw mode used by sz, sb when -g detected */
+            if(!did0) {
+                did0 = TRUE;
+                tcgetattr(fd,&oldtty);
+            }
+            tty = oldtty;
+            tty.c_iflag = BRKINT|IXON;
+            tty.c_oflag = 0;	/* Transparent output */
+            tty.c_cflag &= ~PARENB;	/* Disable parity */
+            tty.c_cflag |= CS8;	/* Set character size = 8 */
+            tty.c_lflag =  0;
+            tty.c_cc[VINTR] = -1;	/* Interrupt char */
+#ifdef _POSIX_VDISABLE
+            if (((int) _POSIX_VDISABLE)!=(-1)) {
+                tty.c_cc[VQUIT] = _POSIX_VDISABLE;		/* Quit char */
+            } else {
+                tty.c_cc[VQUIT] = -1;			/* Quit char */
+            }
+#else
+            tty.c_cc[VQUIT] = -1;			/* Quit char */
+#endif
+            tty.c_cc[VMIN] = 1;
+            tty.c_cc[VTIME] = 1;	/* or in this many tenths of seconds */
 
-    t.c_iflag = 0;
+            tcsetattr(fd,TCSADRAIN,&tty);
 
-    t.c_oflag = 0;
+            return 1;
+        case ZM_MODE_RAW:
+        case ZM_MODE_RAW_FLOW:
+            if(!did0) {
+                did0 = TRUE;
+                tcgetattr(fd,&oldtty);
+            }
+            tty = oldtty;
 
-    t.c_lflag = 0;
+            tty.c_iflag = IGNBRK;
+            /* with flow control */
+            if (mode==ZM_MODE_RAW_FLOW)
+                tty.c_iflag |= IXOFF;
 
-    t.c_cflag |= CS8;
+            /* No echo, crlf mapping, INTR, QUIT, delays, no erase/kill */
+            tty.c_lflag &= ~(ECHO | ICANON | ISIG);
+            tty.c_oflag = 0;	/* Transparent output */
 
-    tcsetattr(0, TCSANOW, &t);
+            tty.c_cflag &= ~(PARENB);	/* Same baud rate, disable parity */
+            /* Set character size = 8 */
+            tty.c_cflag &= ~(CSIZE);
+            tty.c_cflag |= CS8;
+            tty.c_cc[VMIN] = 1; /* This many chars satisfies reads */
+            tty.c_cc[VTIME] = 1;	/* or in this many tenths of seconds */
+            tcsetattr(fd,TCSADRAIN,&tty);
+            return 1;
+        case ZM_MODE_RESTORE:
+            if(!did0)
+                return 0;
+            tcdrain (fd); /* wait until everything is sent */
+            tcflush (fd,TCIOFLUSH); /* flush input queue */
+            tcsetattr (fd,TCSADRAIN,&oldtty);
+            tcflow (fd,TCOON); /* restart output */
+
+            return 1;
+        default:
+            return 0;
+    }
 }
 
-void fd_exit(void) { tcsetattr(0, TCSANOW, &old_termios); }
+void fd_exit(int fd) {
+    fd_init(fd, ZM_MODE_RESTORE);
+}
 
 /*
  * read bytes as long as rdchk indicates that
@@ -83,9 +148,7 @@ void tx_flush(void) { fflush(stdout); }
 
 void tx_raw(int c) {
 #ifdef DEBUG
-    if (raw_trace) {
-        fprintf(stderr, "%02x ", c);
-    }
+    //fprintf(stderr, "%02x ", c);
 #endif
 
     last_sent = c & 0x7f;
@@ -130,18 +193,18 @@ int inputbuffer_index;
  */
 
 /* inline */
-int rx_raw(int timeout) {
+int rx_raw(int timeout_ms) {
     unsigned char c;
     static int n_cans = 0;
 
     if (n_in_inputbuffer == 0) {
         /*
-         * change the timeout into seconds; minimum is 1
+         * change the timeout_ms into seconds; minimum is 1
          */
 
-        timeout /= 1000;
-        if (timeout == 0) {
-            timeout++;
+        timeout_ms /= 1000;
+        if (timeout_ms == 0) {
+            timeout_ms++;
         }
 
         /*
@@ -150,13 +213,13 @@ int rx_raw(int timeout) {
 
         signal(SIGALRM, alrm);
 
-        timeout /= 1000;
+        timeout_ms /= 1000;
 
-        if (timeout == 0) {
-            timeout = 2;
+        if (timeout_ms == 0) {
+            timeout_ms = 2;
         }
 
-        alarm(timeout);
+        alarm(timeout_ms);
 
         n_in_inputbuffer = read(0, inputbuffer, 1024);
 

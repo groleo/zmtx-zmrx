@@ -131,16 +131,16 @@ int inputbuffer_index;
  */
 
 /* inline */
-int rx_raw(int timeout) {
+int rx_raw(int timeout_ms) {
     static unsigned long delay_factor = 20000;
     static int n_cans = 0;
 
     if (n_in_inputbuffer == 0) {
         /*
-         * change the timeout into seconds; minimum is 1
+         * change the timeout_ms into seconds; minimum is 1
          */
 
-        int timeout_secs = timeout / 1000;
+        int timeout_secs = timeout_ms / 1000;
         if (timeout_secs == 0) {
             timeout_secs = 2;
         }
